@@ -48,6 +48,21 @@ const errors = [0.27, 0.27]
     x0size = 1.
     x0 = Zonotope(x0center * ones(2), x0size * I(2))
 
-    r = reach(Φ, x0, W, 100)
+    @time r = reach(Φ, x0, W, 100)
+    @info max_diam(r)
+    @test max_diam(r) > 0
+
+    # Testing reachability analysis with the error bound zonotope W defined as a function
+    W_func = (x) -> let
+        # Get the vertices of the zonotope; `stack` combines the list of vectors into a matrix.
+        vertices_matrix = vertices_list(x) |> stack
+        # Find the maximum value for each state dimension, after taking the absolute values.
+        max_states = maximum(abs.(vertices_matrix), dims=2) |> vec
+        # Calculate the new error bound zonotope
+        get_error_bound(B, K, Zonotope(zeros(Float64, 2), Diagonal(errors .* max_states)))
+    end
+    # For some reason this is really slow; I'm setting max_order to 10 for now.
+    @time r = reach(Φ, x0, W_func, 100, max_order=10)
+    @info max_diam(r)
     @test max_diam(r) > 0
 end
