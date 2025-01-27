@@ -8,18 +8,17 @@ Compute reachable sets for the dynamics ``x[k+1] = Φ x[k] + w``, where ``w`` is
 
 If `max_order` is given, we reduce order of the reachable set to `reduced_order` when it exceeds this limit.  If `remove_redundant` is true, redundant generators are removed at each step.
 """
-function reach(Φ::AbstractMatrix, x0::LazySet, W::LazySet, H::Integer; kwargs...)
-	reach(Φ, x0, (_) -> W, H; kwargs...)
-end
+tofunc(x::Function) = x
+tofunc(x) = (args...) -> x
+reach(Φ, x0::LazySet, W, H::Integer; kwargs...) = reach(tofunc(Φ), x0, tofunc(W), H; kwargs...)
 
-function reach(Φ::AbstractMatrix, x0::LazySet, W_func::Function, H::Integer; max_order::Real=Inf, reduced_order::Real=2, remove_redundant::Bool=true)
+function reach(Φ::Function, x0::LazySet, W::Function, H::Integer; max_order::Real=Inf, reduced_order::Real=2, remove_redundant::Bool=true)
 	# Preallocate x vector
 	x = OffsetArray(Vector{LazySet}(undef, H+1), Origin(0))
 	x[0] = x0
 
 	for k = 1:H
-		W = W_func(x[k-1])
-		x[k] = minkowski_sum(linear_map(Φ, x[k-1]), W)
+		x[k] = minkowski_sum(linear_map(Φ(k), x[k-1]), W(k, x[k-1]))
 		if remove_redundant
 			x[k] = remove_redundant_generators(x[k])
 		end
@@ -28,7 +27,7 @@ function reach(Φ::AbstractMatrix, x0::LazySet, W_func::Function, H::Integer; ma
 		end
 	end
 	
-	F = Flowpipe([ReachSet(x_k, k) for (k, x_k) in enumerate(x)])
+	Flowpipe([ReachSet(x_k, k) for (k, x_k) in enumerate(x)])
 end
 
 """
