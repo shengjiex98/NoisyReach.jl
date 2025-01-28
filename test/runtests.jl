@@ -53,7 +53,7 @@ const errors = [0.27, 0.27]
     @test max_diam(r) > 0
 
     # Testing reachability analysis with the error bound zonotope W defined as a function
-    W_func = (x) -> let
+    W_func = (k, x) -> let
         # Get the vertices of the zonotope; `stack` combines the list of vectors into a matrix.
         vertices_matrix = vertices_list(x) |> stack
         # Find the maximum value for each state dimension, after taking the absolute values.

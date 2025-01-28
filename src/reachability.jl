@@ -1,6 +1,14 @@
 using OffsetArrays: OffsetArray, Origin
 using ReachabilityAnalysis
 
+
+"""
+Convert x to a function with constant return value if it is not already a function.
+"""
+function tofunc(x)
+	x isa Function ? x : (args...) -> x
+end
+
 """
 	reach(Φ, x0, W, H; max_order=Inf, reduced_order=2, remove_redundant=true)
 
@@ -8,10 +16,6 @@ Compute reachable sets for the dynamics ``x[k+1] = Φ x[k] + w``, where ``w`` is
 
 If `max_order` is given, we reduce order of the reachable set to `reduced_order` when it exceeds this limit.  If `remove_redundant` is true, redundant generators are removed at each step.
 """
-tofunc(x::Function) = x
-tofunc(x) = (args...) -> x
-reach(Φ, x0::LazySet, W, H::Integer; kwargs...) = reach(tofunc(Φ), x0, tofunc(W), H; kwargs...)
-
 function reach(Φ::Function, x0::LazySet, W::Function, H::Integer; max_order::Real=Inf, reduced_order::Real=2, remove_redundant::Bool=true)
 	# Preallocate x vector
 	x = OffsetArray(Vector{LazySet}(undef, H+1), Origin(0))
@@ -29,6 +33,7 @@ function reach(Φ::Function, x0::LazySet, W::Function, H::Integer; max_order::Re
 	
 	Flowpipe([ReachSet(x_k, k) for (k, x_k) in enumerate(x)])
 end
+reach(Φ, x0::LazySet, W, H::Integer; kwargs...) = reach(tofunc(Φ), x0, tofunc(W), H; kwargs...)
 
 """
 	max_diam(pipe)
