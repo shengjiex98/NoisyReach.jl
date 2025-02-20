@@ -10,26 +10,24 @@ const latency = 0.02
 # Error of each individual dimension
 const errors = [0.27, 0.27]
 
-@testset "NoisyReach.jl" begin
-    # Linearized bicycle model of the F1/10 race car
-    sys = let 
-        v = 6.5
-        L = 0.3302
-        d = 1.5
-        A = [0 v ; 0 0]
-        B = [0; v/L]
-        C = [1 0]
-        D = 0
-    
-        ss(A, B, C, D)
-    end
+@testset "models" begin
+    s = benchmarks[:F1]
+    @test size(s.A) == (2, 2)
+    @test size(s.B) == (2, 1)
+    @test c2d(s, latency).A ≈ [1.0 0.12999999999999998; 0.0 1.0]
+end
 
-    A = c2d(sys, latency).A
-    B = c2d(sys, latency).B
+@testset "controllers" begin
+    s = benchmarks[:F1]
+    @test delay_lqr(s, latency) ≈ [0.5829779235411586 0.9271753376618778 0.3501109341069689]
+    @test pole_place(s, latency) ≈ [0.19538461538461566 0.5207 0.20000000000000026]
+end
+
+@testset "reachability" begin
+    s = c2d(benchmarks[:F1], latency)
+    A = s.A
+    B = s.B
     K = lqr(ControlSystemsBase.Discrete, A, B, I, I)
-
-    @test size(A) == (2, 2)
-    @test size(B) == (2, 1)
     @test size(K) == (1, 2)
 
     # Perception error bound zonotope
